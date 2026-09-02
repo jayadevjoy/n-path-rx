@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+from scipy.fft import fftfreq, fftshift
 
 import importlib
 import utilities
@@ -106,18 +107,18 @@ class NPathRXTest:
                 y_conv_mat = y_conv_adc_quant[:, -self.ofdm_adc:].copy()
                 
                 # Determine the desired frequency band based on the OFDM symmetry
-                f = np.fft.fftshift(np.fft.fftfreq(self.ofdm_adc, 1/self.f_adc))
+                f = fftshift(fftfreq(self.ofdm_adc, 1 / self.f_adc))
                 if self.symmetry:
                     f_mask = np.abs(f) <= (self.bw_ofdm / 2)      
                 else:
                     f_mask = (f >= 0) and (f < self.bw_ofdm)
 
-                # Convert to frequncy domain and extract the desired components
-                X_mat = np.fft.fftshift(nfft(x_mat))[:,f_mask]
-                Y_mat = np.fft.fftshift(nfft(y_mat))[:,f_mask]
-                Y_conv_mat = np.fft.fftshift(nfft(y_conv_mat))[:,f_mask]
+                # Convert to frequency domain and extract the desired components
+                X_mat = fftshift(nfft(x_mat))[:,f_mask]
+                Y_mat = fftshift(nfft(y_mat))[:,f_mask]
+                Y_conv_mat = fftshift(nfft(y_conv_mat))[:,f_mask]
 
-                # Compute achievable rates (using frequency domain)
+                # Compute achievable rates (in frequency domain)
                 npath_rates[i, j] = achievable_rate(X_mat, Y_mat)
                 conv_rates[i, j]  = achievable_rate(X_mat, Y_conv_mat)
 

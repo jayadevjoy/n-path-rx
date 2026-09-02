@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.fft import fft, ifft
+from scipy.fft import fft, ifft, fftfreq, fftshift
 
 # Normalized FFT: unitary DFT with 1/sqrt(N) scaling
 def nfft(x):
@@ -65,7 +65,23 @@ def delta_backoff(y, b=10, backoff_db=12):
     delta = A / (2**(b - 1))
     return float(delta)
 
+# Plot Power Spectral Density (PSD) of a signal
+def plot_psd(signal, f_s, ax=None):
+    if ax is None:
+        ax = plt.gca()
 
+    # Compute FFT and PSD
+    Nfft = len(signal)
+    f    = fftfreq(Nfft, 1 / f_s)
+    S    = np.abs(nfft(signal)) ** 2
+
+    # Convert to dB scale
+    S = np.maximum(S, 1e-5)
+    S = 10 * np.log10(S)
+
+    # Plot PSD
+    ax.plot(fftshift(f) / 1e6, fftshift(S))
+    ax.grid(True)
 
 
 
@@ -159,21 +175,3 @@ def plot_rate_comparison(path_4_csv, path_8_csv, file_path=None):
     plt.savefig(file_path, dpi=300, bbox_inches="tight")
     print(f"Plot saved to {file_path}")
     plt.show()
-
-# Plot Power Spectral Density (PSD) of a signal
-def plot_psd(signal, f_s, ax=None):
-    if ax is None:
-        ax = plt.gca()
-
-    # Compute FFT and PSD
-    Nfft = len(signal)
-    f    = np.fft.fftfreq(Nfft, 1 / f_s)
-    S    = np.abs(nfft(signal)) ** 2
-
-    # Convert to dB scale
-    S = np.maximum(S, 1e-5)
-    S = 10 * np.log10(S)
-
-    # Plot PSD
-    ax.plot(np.fft.fftshift(f) / 1e6, np.fft.fftshift(S))
-    ax.grid(True)
