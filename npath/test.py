@@ -3,15 +3,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from scipy.fft import fftfreq, fftshift
 
-import importlib
-import utilities
-import npathrx
-
-importlib.reload(utilities)
-importlib.reload(npathrx)
-
-from utilities import nfft, plot_psd, achievable_rate
-from npathrx import SignalGenerator, NPathRX
+from .utilities import nfft, achievable_rate
+from .npathrx import SignalGenerator, NPathRX
+from .plot import plot_psd
 
 
 class NPathRXTest:
@@ -131,7 +125,7 @@ class NPathRXTest:
                     'conv_rate': conv_rates[i, j]})
         
         if file_path is None:
-            file_path = f"../results/data/{self.N}_path_data.csv"
+            file_path = f"results/data/{self.N}_path_data.csv"
         
         df = pd.DataFrame(self.results)
         df.to_csv(file_path, index=False)
@@ -141,12 +135,6 @@ class NPathRXTest:
         """
         Plot time-domain waveforms and PSDs for the reference, N-path, and
         conventional receiver outputs at a single (SNR, INR) operating point.
-
-        Parameters
-        ----------
-        snr_db : float - Desired signal SNR [dB]
-        inr_db : float - Interferer INR [dB]
-        file_path : str - Path to save the plot (optional)
         """
 
         # Instantiate signal generator and N-path receiver
@@ -174,37 +162,29 @@ class NPathRXTest:
         y_mat = y_adc_quant[:, -self.ofdm_adc:].copy()
         y_conv_mat = y_conv_adc_quant[:, -self.ofdm_adc:].copy()
 
-        # ── IEEE style ──────────────────────────────────────────────────
-        plt.rcParams.update({
-            "font.family":       "serif",
-            "font.serif":        ["Times New Roman", "Times", "DejaVu Serif"],
-            "font.size":         8,
-            "axes.labelsize":    8,
-            "axes.titlesize":    8,
-            "xtick.labelsize":   7,
-            "ytick.labelsize":   7,
-            "lines.linewidth":   0.8,
-            "axes.linewidth":    0.6,
-            "xtick.major.width": 0.5,
-            "ytick.major.width": 0.5,
-            "grid.linewidth":    0.4,
-            "grid.alpha":        0.5,
-            "figure.dpi":        300,
-        })
+        plt.rcParams.update({"font.family":       "serif",
+                            "font.serif":        ["Times New Roman", "Times", "DejaVu Serif"],
+                            "font.size":         8,
+                            "axes.labelsize":    8,
+                            "axes.titlesize":    8,
+                            "xtick.labelsize":   7,
+                            "ytick.labelsize":   7,
+                            "lines.linewidth":   0.8,
+                            "axes.linewidth":    0.6,
+                            "xtick.major.width": 0.5,
+                            "ytick.major.width": 0.5,
+                            "grid.linewidth":    0.4,
+                            "grid.alpha":        0.5,
+                            "figure.dpi":        300})
 
-        # Full page width for IEEE double-column paper
         fig, axes = plt.subplots(3, 2, figsize=(9, 5), constrained_layout=True)
 
-        # ── Column headings (set as titles on top-row axes only) ─────────────
         axes[0][0].set_title("Time-Domain Waveform (Real Part)", fontsize=8, fontweight="bold", pad=4)
         axes[0][1].set_title("Power Spectral Density (dB)",      fontsize=8, fontweight="bold", pad=4)
 
-        # ── Data and row labels ───────────────────────────────────────────────
-        rows = [
-            ("Baseband Input",        x_mat[0, :],      x_mat[0, :]),
+        rows = [("Baseband Input",        x_mat[0, :],      x_mat[0, :]),
             (f"{self.N}-Path RX Chain",     y_mat[0, :],      y_mat[0, :]),
-            ("Conventional RX Chain", y_conv_mat[0, :], y_conv_mat[0, :]),
-        ]
+            ("Conventional RX Chain", y_conv_mat[0, :], y_conv_mat[0, :])]
 
         for row_idx, (row_label, sig_time, sig_freq) in enumerate(rows):
             ax_t = axes[row_idx, 0]
@@ -227,84 +207,8 @@ class NPathRXTest:
         fig.align_ylabels([axes[r][1] for r in range(3)])  # right column
 
         if file_path is None:
-            file_path = f"../results/plots/{self.N}_path_{snr_db}_snr_{inr_db}_inr_spectrum.pdf"
+            file_path = f"results/plots/{self.N}_path_{snr_db}_snr_{inr_db}_inr_spectrum.pdf"
 
         plt.savefig(file_path, dpi=300, bbox_inches='tight')
-        print(f"Plot saved to {file_path}")
-        plt.show()
-
-    def plot_rate(self, csv_path, file_path=None):
-        df         = pd.read_csv(csv_path)
-        snr_values = sorted(df["snr"].unique())
-        n_cols     = len(snr_values)
-
-        # ── IEEE style (mirrors plot_spectrum) ───────────────────────────
-        plt.rcParams.update({
-            "font.family":       "serif",
-            "font.serif":        ["Times New Roman", "Times", "DejaVu Serif"],
-            "font.size":         8,
-            "axes.labelsize":    8,
-            "axes.titlesize":    8,
-            "xtick.labelsize":   7,
-            "ytick.labelsize":   7,
-            "lines.linewidth":   0.8,
-            "axes.linewidth":    0.6,
-            "xtick.major.width": 0.5,
-            "ytick.major.width": 0.5,
-            "grid.linewidth":    0.4,
-            "grid.alpha":        0.5,
-            "figure.dpi":        300,
-        })
-
-        fig, axes = plt.subplots(1, n_cols, figsize=(9, 2.5),
-                                sharey=True, constrained_layout=True)
-        if n_cols == 1:
-            axes = [axes]
-
-        # ── Line styles ───────────────────────────────────────────────────
-        ls_npath = dict(color="C0", linewidth=0.8, linestyle="-",
-                        marker="o", markersize=2.5, markeredgewidth=0.4)
-        ls_conv  = dict(color="C1", linewidth=0.8, linestyle="--",
-                        marker="s", markersize=2.5, markeredgewidth=0.4)
-
-        for c, (ax, snr) in enumerate(zip(axes, snr_values)):
-            is_left  = (c == 0)
-            is_mid   = (c == n_cols // 2)
-            subset   = df[df["snr"] == snr].sort_values("inr")
-
-            ax.plot(subset["inr"], subset["npath_rate"],
-                    label=f"$N={self.N}$-Path RX", **ls_npath)
-            ax.plot(subset["inr"], subset["conv_rate"],
-                    label="Conventional RX",        **ls_conv)
-
-            # Column heading on every subplot (mirrors plot_spectrum top-row titles)
-            ax.set_title(f"SNR = {snr} dB", fontsize=8, fontweight="bold", pad=4)
-
-            ax.set_xlim(subset["inr"].min(), subset["inr"].max())
-            ax.grid(True)
-
-            ax.set_xlabel("INR (dB)" if is_mid else "")
-            if is_left:
-                ax.set_ylabel("Rate (bits/s/Hz)", fontsize=7, labelpad=2)
-
-        # ── Legend inside last subplot, top-right ────────────────────────
-        handles, labels = axes[-1].get_legend_handles_labels()
-        axes[-1].legend(
-            handles, labels,
-            loc="upper right",
-            fontsize=6,
-            framealpha=0.8,
-            edgecolor="0.5",
-            borderpad=0.4,
-            labelspacing=0.3,
-            handlelength=1.5,
-            handletextpad=0.4)
-
-        fig.align_ylabels(axes)
-
-        if file_path is None:
-            file_path = f"../results/plots/{self.N}_path_rate_vs_inr.pdf"
-
-        plt.savefig(file_path, dpi=300, bbox_inches="tight")
         print(f"Plot saved to {file_path}")
         plt.show()

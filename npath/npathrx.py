@@ -1,11 +1,7 @@
 import numpy as np
 from scipy.fft import ifftshift
 
-import importlib
-import utilities
-importlib.reload(utilities)
-
-from utilities import nifft, quantizer, delta_backoff
+from .utilities import nifft, quantizer, delta_backoff
 
 
 class SignalGenerator:
@@ -201,7 +197,7 @@ class NPathRX:
         y_conv = y_conv * np.exp(-1j * 2 * np.pi * self.f_lo * t)
 
         # 2nd-order RC LPF
-        y_conv = self.rc_lpf(x=y_conv, R=self.R2, C=self.C2)
+        y_conv = self.rc_lpf(x=y_conv, R=self.R1, C=self.N*self.C1)
         # y_conv = self.rc_lpf(x=y_conv, R=self.R2, C=self.C2)
 
         # ADC downsampling
