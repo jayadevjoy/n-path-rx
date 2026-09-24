@@ -217,7 +217,7 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-/unused_notebooks/
+# /unused_notebooks/
 
 /.vscode
 
